@@ -59,19 +59,35 @@ public class SIRSimulation {
     public static final Region BOUNDARY = new Region(10, 10, 900, 600);
     private static final ArrayList<Individuals> citizens = new ArrayList<>();
     public static final ArrayList<Region> quarantines = new ArrayList<>();
-    public static  double infectRad;
-    public static  double infectProb;
+    public static final ArrayList<Events> events = new ArrayList<>();
+
     public static ArrayList<Individuals> getCitizens() {
         return citizens;
     }
 
+    public static ArrayList<Region> getQuarantines() {
+        return quarantines;
+    }
+
+    public static ArrayList<Events> getEvents() {
+        return events;
+    }
+
+
+    public static double infectRad;
+    public static double infectProb;
+    public static int infectTimer = 100;
+
+    public static int getInfectionTime() {
+        return infectTimer;
+    }
+
+    int stepTimer = 250 / 5;
     private static Location startLoc;
     boolean running = false;
     public static int stepCount = 0;
     char mAction;
-    final int sleep = 50;
     /*# YOUR CODE HERE */
-
 
 
     // Main
@@ -79,6 +95,8 @@ public class SIRSimulation {
         new SIRSimulation().setupGUI();
         UI.clearGraphics();
         BOUNDARY.draw(Color.black);
+        quarantines.add(new Region(10, 10, 900, 600));
+
     }
 
     public void popCount(double popNum) {
@@ -100,17 +118,21 @@ public class SIRSimulation {
                 i.move();
                 i.step();
             }
+            for (Events e : events){
+                e.draw();
+            }
             UI.repaintGraphics();
-            UI.sleep(sleep);
+            UI.sleep(stepTimer);
         }
     }
 
     public void reset() {
+        quarantines.add(new Region(10, 10, 900, 600));
         running = false;
         UI.clearGraphics();
         citizens.clear();
         BOUNDARY.draw(Color.BLACK);
-        UI.sleep(sleep);
+        UI.sleep(stepTimer);
     }
 
     public void doMouse(String action, double x, double y) {
@@ -118,25 +140,29 @@ public class SIRSimulation {
             citizens.add(new Individuals(x, y));
         } else if (mAction == 'Q') {
             if (action.equals(("pressed"))) {
-                startLoc = new Location(x,y);
+                startLoc = new Location(x, y);
             } else if (action.equals("released")) {
                 quarantines.add(new Region(startLoc.getX(), startLoc.getY(), x, y));
                 for (Region r : quarantines) r.draw(Color.BLACK);
+            }
+        } else if (mAction == 'E') {
+            if (action.equals(("pressed"))) {
+                startLoc = new Location(x, y);
+            }else if (action.equals("released")){
+                int rad = (int) (x - startLoc.getX());
+                events.add(new Events(startLoc.getX(), startLoc.getY(), 100, rad, 100));
+
             }
         }
     }
 
 
-    private void event() {
-    }
-
-
     private void removeQuarantine() {
+        quarantines.clear();
     }
 
     private void infectionProbability(double v) {
         infectProb = v * 0.01;
-        UI.println(infectProb);
     }
 
     private void infectionDistance(double v) {
@@ -145,11 +171,7 @@ public class SIRSimulation {
     }
 
     private void infectionTime(double v) {
-
-    }
-
-    private void simulationSpeed(double v) {
-
+        infectTimer = (int) v;
     }
 
 
@@ -158,13 +180,13 @@ public class SIRSimulation {
         UI.addSlider("Population Size", 0, 1000, 0, this::popCount);
         UI.addButton("Reset", this::reset);
         UI.addButton("Add Infected", () -> mAction = 'I');
-        UI.addButton("Event", this::event);
+        UI.addButton("Event", () -> mAction = 'E');
         UI.addButton("Quarantine", () -> mAction = 'Q');
         UI.addButton("Remove Quarantine", this::removeQuarantine);
         UI.addSlider("Infection Probability:", 0, 100, 0, this::infectionProbability);
-        UI.addSlider("Infection Distance:", 1, 29, 8, this::infectionDistance);
-        UI.addSlider("Infection Time:", 1, 3999, 2000, this::infectionTime);
-        UI.addSlider("Simulation Speed:", 1, 7, 4, this::simulationSpeed);
+        UI.addSlider("Infection Distance:", 1, 30, 15, this::infectionDistance);
+        UI.addSlider("Infection Time:", 1, 500, 250, this::infectionTime);
+        UI.addSlider("Simulation Speed", 1, 10, 5, (double v) -> stepTimer = (int) (250 / v));
         UI.addButton("quit", UI::quit);
         UI.setMouseListener(this::doMouse);
 

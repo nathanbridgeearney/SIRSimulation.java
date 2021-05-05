@@ -4,13 +4,11 @@ import java.awt.*;
 import java.util.ArrayList;
 
 public class Individuals {
-    private static final Region BOUNDARY = new Region(10, 10, 900, 600);
+    public static Region BOUNDARY = new Region(10, 10, 900, 600);
     private final Location loc;
-    private int infectTimer;
-    private int recovTimer;
     double dir;
     public String condition;
-
+    private int infectTimer = 0;
 
     public Individuals() {
         loc = new Location(SIRSimulation.BOUNDARY);
@@ -34,53 +32,50 @@ public class Individuals {
     }
 
     public void move() {
-
         if (SIRSimulation.stepCount == 40) {
             dir += (int) (Math.random() * 360);
         }
-        if (BOUNDARY.onBoundary(loc)) {
-            dir -= 150 + (60 * Math.random());
-        }
-        for (Region r: SIRSimulation.quarantines) {
-            if(r.onBoundary(loc)){
-                UI.println("d");
-                dir -= 150 + (60 * Math.random());
+        for (Region i : SIRSimulation.getQuarantines()) {
+            if (i.contains(loc)) {
+                BOUNDARY = new Region(i.west, i.north, i.east, i.south);
+                if (BOUNDARY.onBoundary(loc)) {
+                    dir = dir + 180;
+                }
             }
         }
         loc.moveInDirection(2.5, dir, BOUNDARY);
-        if (condition.equals("Healthy")) {
+        if (infectTimer == SIRSimulation.getInfectionTime() && condition.equals("Infected")) {
+            condition = "Recovered";
+            UI.setColor(Color.blue);
+            infectTimer = 0;
+        } else if (infectTimer == SIRSimulation.getInfectionTime() && condition.equals("Recovered")) {
+            condition = "Healthy";
+            infectTimer = 0;
+        } else if (condition.equals("Recovered")) {
+            UI.setColor(Color.blue);
+            infectTimer++;
+        } else if (condition.equals("Healthy")) {
             UI.setColor(Color.green);
         } else if (condition.equals("Infected")) {
             UI.setColor(Color.red);
-            recovTimer++;
-        } else if (recovTimer > 10 || condition.equals("Recovered") ) {
-            condition = "Recovered";
-            UI.setColor(Color.blue);
             infectTimer++;
-            if (infectTimer > 100){
-                condition = "Healthy";
-            }
         }
         UI.fillOval(this.getLocation().getX() - 4, this.getLocation().getY() - 4, 8, 8);
-
     }
 
-
     public void step() {
-        if (condition.equals("Healthy")){
+        if (condition.equals("Healthy")) {
             if (infection()) {
                 condition = "Infected";
             }
         }
     }
 
-
     public Location getLocation() {
         return this.loc;
     }
 
-    public String getCondition()
-    {
+    public String getCondition() {
         return this.condition;
     }
 }
